@@ -1,0 +1,16 @@
+# Test files
+test*.lua
+test*.go
+debug*.lua
+check*.lua
+inspect*.lua
+*.sh
+
+# Temp files
+*.swp
+*.bak
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
