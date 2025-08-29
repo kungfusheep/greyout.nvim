@@ -4,7 +4,7 @@ Dim less important code to focus on what matters.
 
 A Neovim plugin that uses Treesitter to visually de-emphasize boilerplate code like error handling and logging.
 
-<img width="762" height="404" alt="image" src="https://github.com/user-attachments/assets/ebd0fb0c-52dc-4dee-ba1e-a332b1e166a8" />
+<img alt="example" src="https://github.com/user-attachments/assets/ebd0fb0c-52dc-4dee-ba1e-a332b1e166a8" />
 
 
 ## Features
