@@ -1,13 +1,11 @@
 local M = {}
 
 M.defaults = {
-  auto_enable = true,
-  mode = "grey", -- "grey", "conceal", "fold", or "off"
+  enabled = true,
+  mode = "grey", -- "grey", "conceal", "fold"
   keymaps = {
-    enabled = true,
-    toggle = "<leader>gt",   -- Toggle on/off  
-    cycle = "<leader>gc",    -- Cycle through modes
-    refresh = "<leader>gr",  -- Refresh
+    toggle = "<leader>gt",
+    cycle = "<leader>gc",
   },
   languages = {
     go = {
@@ -23,8 +21,7 @@ M.defaults = {
     custom = nil,
   },
   conceal = {
-    placeholder = "...", -- What to show instead of concealed text
-    show_on_cursor = true, -- Show text when cursor is on the line
+    placeholder = "...",
   },
   custom_patterns = {},
 }

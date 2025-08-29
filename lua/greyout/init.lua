@@ -3,8 +3,7 @@ local config = require("greyout.config")
 local highlights = require("greyout.highlights")
 
 M.enabled = false
-M.namespaces = {}
-M.language_modules = {}  -- For language pattern modules
+M.language_modules = {}
 
 -- Pattern management functions (merged from patterns.lua)
 local function has_patterns(filetype)
@@ -55,11 +54,9 @@ function M.setup(opts)
   M.setup_commands()
   M.setup_autocmds()
   
-  if config.options.keymaps.enabled then
-    M.setup_keymaps()
-  end
+  M.setup_keymaps()
   
-  if config.options.auto_enable then
+  if config.options.enabled then
     M.enable()
   end
 end
@@ -116,11 +113,7 @@ function M.refresh_buffer(bufnr)
   -- Set conceallevel if in conceal mode
   if config.options.mode == "conceal" then
     vim.api.nvim_win_set_option(0, "conceallevel", 2)
-    if config.options.conceal.show_on_cursor then
-      vim.api.nvim_win_set_option(0, "concealcursor", "")
-    else
-      vim.api.nvim_win_set_option(0, "concealcursor", "nvic")
-    end
+    vim.api.nvim_win_set_option(0, "concealcursor", "")
   end
   
   local ok, parser = pcall(vim.treesitter.get_parser, bufnr, ft)
@@ -184,12 +177,10 @@ function M.cycle_mode()
     end
   end
   
-  vim.notify("Greyout mode: " .. next_mode)
 end
 
 function M.set_mode(mode)
   if mode ~= "off" and mode ~= "grey" and mode ~= "conceal" and mode ~= "fold" then
-    vim.notify("Invalid mode. Use 'off', 'grey', 'conceal', or 'fold'", vim.log.levels.ERROR)
     return
   end
   
@@ -215,27 +206,19 @@ function M.set_mode(mode)
     end
   end
   
-  vim.notify("Greyout mode: " .. mode)
 end
 
 function M.setup_commands()
   vim.api.nvim_create_user_command("GreyoutToggle", function()
     M.toggle()
-    vim.notify("Greyout " .. (M.enabled and "enabled" or "disabled"))
   end, {})
   
   vim.api.nvim_create_user_command("GreyoutEnable", function()
     M.enable()
-    vim.notify("Greyout enabled")
   end, {})
   
   vim.api.nvim_create_user_command("GreyoutDisable", function()
     M.disable()
-    vim.notify("Greyout disabled")
-  end, {})
-  
-  vim.api.nvim_create_user_command("GreyoutRefresh", function()
-    M.refresh_all()
   end, {})
   
   vim.api.nvim_create_user_command("GreyoutCycle", function()
@@ -243,9 +226,7 @@ function M.setup_commands()
   end, {})
   
   vim.api.nvim_create_user_command("GreyoutMode", function(opts)
-    if opts.args == "" then
-      vim.notify("Current mode: " .. config.options.mode)
-    else
+    if opts.args ~= "" then
       M.set_mode(opts.args)
     end
   end, {
@@ -254,26 +235,6 @@ function M.setup_commands()
       return { "off", "grey", "conceal", "fold" }
     end,
   })
-  
-  vim.api.nvim_create_user_command("GreyoutStatus", function()
-    local bufnr = vim.api.nvim_get_current_buf()
-    local ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
-    print("Greyout Status:")
-    print("  Enabled: " .. tostring(M.enabled))
-    print("  Filetype: " .. ft)
-    print("  Has patterns: " .. tostring(has_patterns(ft)))
-    
-    if ft == "go" then
-      local lang_config = config.get_language_config("go")
-      if lang_config then
-        print("  Go config:")
-        print("    Enabled: " .. tostring(lang_config.enabled))
-        print("    Error handling: " .. tostring(lang_config.patterns.error_handling))
-        print("    Logging: " .. tostring(lang_config.patterns.logging))
-        print("    Debug: " .. tostring(lang_config.patterns.debug))
-      end
-    end
-  end, {})
 end
 
 function M.setup_keymaps()
@@ -281,7 +242,7 @@ function M.setup_keymaps()
   
   if keymaps.toggle then
     vim.keymap.set("n", keymaps.toggle, function() M.toggle() end, { 
-      desc = "Greyout: Toggle on/off",
+      desc = "Greyout: Toggle",
       silent = true 
     })
   end
@@ -289,13 +250,6 @@ function M.setup_keymaps()
   if keymaps.cycle then
     vim.keymap.set("n", keymaps.cycle, function() M.cycle_mode() end, { 
       desc = "Greyout: Cycle modes",
-      silent = true 
-    })
-  end
-  
-  if keymaps.refresh then
-    vim.keymap.set("n", keymaps.refresh, function() M.refresh_all() end, { 
-      desc = "Greyout: Refresh",
       silent = true 
     })
   end
