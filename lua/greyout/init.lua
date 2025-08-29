@@ -1,15 +1,56 @@
 local M = {}
 local config = require("greyout.config")
 local highlights = require("greyout.highlights")
-local patterns = require("greyout.patterns")
 
 M.enabled = false
 M.namespaces = {}
+M.language_modules = {}  -- For language pattern modules
+
+-- Pattern management functions (merged from patterns.lua)
+local function has_patterns(filetype)
+  local lang_config = config.get_language_config(filetype)
+  return lang_config and lang_config.enabled and M.language_modules[filetype] ~= nil
+end
+
+local function apply_custom_patterns(bufnr, filetype, root)
+  local custom = config.options.custom_patterns[filetype]
+  if not custom then return end
+  
+  local lang = vim.treesitter.language.get_lang(filetype)
+  if not lang then return end
+  
+  for pattern_name, query_string in pairs(custom) do
+    local ok, query = pcall(vim.treesitter.query.parse, lang, query_string)
+    if ok then
+      for _, match, _ in query:iter_matches(root, bufnr, 0, -1) do
+        for id, node in pairs(match) do
+          local start_row, start_col, end_row, end_col = node:range()
+          highlights.add_highlight(bufnr, start_row, start_col, end_row, end_col)
+        end
+      end
+    else
+      vim.notify("Greyout: Invalid custom pattern '" .. pattern_name .. "': " .. query, vim.log.levels.WARN)
+    end
+  end
+end
+
+local function apply_patterns(bufnr, filetype, root)
+  local lang_module = M.language_modules[filetype]
+  if not lang_module then return end
+  
+  if lang_module.apply_patterns then
+    lang_module.apply_patterns(bufnr, root)
+  end
+  
+  apply_custom_patterns(bufnr, filetype, root)
+end
 
 function M.setup(opts)
   config.setup(opts)
   highlights.setup()
-  patterns.setup()
+  
+  -- Load language modules
+  M.language_modules.go = require("greyout.languages.go")
   
   M.setup_commands()
   M.setup_autocmds()
@@ -68,7 +109,7 @@ function M.refresh_buffer(bufnr)
   if not vim.api.nvim_buf_is_valid(bufnr) then return end
   
   local ft = vim.api.nvim_buf_get_option(bufnr, "filetype")
-  if not patterns.has_patterns(ft) then return end
+  if not has_patterns(ft) then return end
   
   highlights.clear_buffer(bufnr)
   
@@ -94,7 +135,7 @@ function M.refresh_buffer(bufnr)
   local tree = trees[1]
   local root = tree:root()
   
-  patterns.apply_patterns(bufnr, ft, root)
+  apply_patterns(bufnr, ft, root)
   
   -- Apply folds if in fold mode
   if config.options.mode == "fold" then
@@ -220,7 +261,7 @@ function M.setup_commands()
     print("Greyout Status:")
     print("  Enabled: " .. tostring(M.enabled))
     print("  Filetype: " .. ft)
-    print("  Has patterns: " .. tostring(patterns.has_patterns(ft)))
+    print("  Has patterns: " .. tostring(has_patterns(ft)))
     
     if ft == "go" then
       local lang_config = config.get_language_config("go")
@@ -236,30 +277,26 @@ function M.setup_commands()
 end
 
 function M.setup_keymaps()
-  local prefix = config.options.keymaps.prefix
-  local mappings = config.options.keymaps.mappings
+  local keymaps = config.options.keymaps
   
-  local function map(suffix, cmd, desc)
-    vim.keymap.set("n", prefix .. suffix, cmd, { 
-      desc = "Greyout: " .. desc,
+  if keymaps.toggle then
+    vim.keymap.set("n", keymaps.toggle, function() M.toggle() end, { 
+      desc = "Greyout: Toggle on/off",
       silent = true 
     })
   end
   
-  -- Set up keymaps
-  map(mappings.toggle, function() M.toggle() end, "Toggle on/off")
-  map(mappings.cycle, function() M.cycle_mode() end, "Cycle modes")
-  map(mappings.grey, function() M.set_mode("grey") end, "Grey mode")
-  map(mappings.conceal, function() M.set_mode("conceal") end, "Hide/conceal mode")
-  map(mappings.fold, function() M.set_mode("fold") end, "Fold mode (collapses lines)")
-  map(mappings.off, function() M.set_mode("off") end, "Turn off")
-  map(mappings.refresh, function() M.refresh_all() end, "Refresh")
+  if keymaps.cycle then
+    vim.keymap.set("n", keymaps.cycle, function() M.cycle_mode() end, { 
+      desc = "Greyout: Cycle modes",
+      silent = true 
+    })
+  end
   
-  -- Also add a which-key friendly description for the prefix
-  local ok, which_key = pcall(require, "which-key")
-  if ok then
-    which_key.register({
-      [prefix] = { name = "+greyout" }
+  if keymaps.refresh then
+    vim.keymap.set("n", keymaps.refresh, function() M.refresh_all() end, { 
+      desc = "Greyout: Refresh",
+      silent = true 
     })
   end
 end

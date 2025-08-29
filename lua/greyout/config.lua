@@ -5,16 +5,9 @@ M.defaults = {
   mode = "grey", -- "grey", "conceal", "fold", or "off"
   keymaps = {
     enabled = true,
-    prefix = "<leader>gc", -- Base prefix for keymaps
-    mappings = {
-      toggle = "t",     -- <leader>gct - Toggle on/off
-      cycle = "c",      -- <leader>gcc - Cycle through modes
-      grey = "g",       -- <leader>gcg - Set grey mode
-      conceal = "h",    -- <leader>gch - Hide/conceal mode
-      fold = "f",       -- <leader>gcf - Fold mode
-      off = "o",        -- <leader>gco - Turn off
-      refresh = "r",    -- <leader>gcr - Refresh
-    }
+    toggle = "<leader>gt",   -- Toggle on/off  
+    cycle = "<leader>gc",    -- Cycle through modes
+    refresh = "<leader>gr",  -- Refresh
   },
   languages = {
     go = {

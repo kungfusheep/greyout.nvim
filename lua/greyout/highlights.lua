@@ -76,12 +76,6 @@ function M.add_highlight(bufnr, start_row, start_col, end_row, end_col)
   end
 end
 
-
-function M.add_highlight_range(bufnr, range)
-  local start_row, start_col, end_row, end_col = range[1], range[2], range[3], range[4]
-  M.add_highlight(bufnr, start_row, start_col, end_row, end_col)
-end
-
 function M.apply_folds(bufnr)
   -- Apply folds for fold mode
   if not M.fold_info[bufnr] or #M.fold_info[bufnr] == 0 then
@@ -90,10 +84,6 @@ function M.apply_folds(bufnr)
   
   local win = vim.fn.bufwinid(bufnr)
   if win ~= -1 then
-    -- Save current fold state
-    local saved_foldmethod = vim.api.nvim_win_get_option(win, "foldmethod")
-    local saved_foldlevel = vim.api.nvim_win_get_option(win, "foldlevel")
-    
     -- Switch to manual fold method
     vim.api.nvim_win_set_option(win, "foldmethod", "manual")
     vim.api.nvim_win_set_option(win, "foldenable", true)
@@ -152,28 +142,8 @@ function M.clear_buffer(bufnr)
   if not M.namespace then return end
   vim.api.nvim_buf_clear_namespace(bufnr, M.namespace, 0, -1)
   
-  -- Clear our tracked folds
-  if M.created_folds[bufnr] and #M.created_folds[bufnr] > 0 then
-    local win = vim.fn.bufwinid(bufnr)
-    if win ~= -1 then
-      -- Save cursor position
-      local cursor = vim.api.nvim_win_get_cursor(win)
-      
-      -- Delete only the folds we created
-      for _, fold in ipairs(M.created_folds[bufnr]) do
-        -- Position cursor at the fold and delete it
-        vim.api.nvim_win_set_cursor(win, {fold.start_line, 0})
-        vim.cmd("silent! normal! zd")
-      end
-      
-      -- Restore cursor position
-      vim.api.nvim_win_set_cursor(win, cursor)
-    end
-  end
-  
-  -- Clear fold tracking info
-  M.fold_info[bufnr] = nil
-  M.created_folds[bufnr] = nil
+  -- Also clear folds
+  M.clear_folds(bufnr)
 end
 
 return M
